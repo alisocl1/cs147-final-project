@@ -34,11 +34,11 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(BLUE_BUTTON) == HIGH){
+  if (digitalRead(BLUE_BUTTON) == LOW){
     desired_temp -= 1;
     delay(10);
   }
-  else if (digitalRead(RED_BUTTON) == HIGH){
+  else if (digitalRead(RED_BUTTON) == LOW){
     desired_temp += 1;
     delay(10);
   }
