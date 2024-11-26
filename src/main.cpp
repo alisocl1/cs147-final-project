@@ -1,12 +1,12 @@
 #include <Arduino.h>
-#include <DHT.h>
+#include "DHT.h"
 #include <TFT_eSPI.h>
 
-#define BLUE_LED 36
-#define RED_LED 37
-#define BLUE_BUTTON 25
-#define RED_BUTTON 26
-#define DHT_PIN 38
+#define BLUE_LED 21
+#define RED_LED 17
+#define BLUE_BUTTON 2
+#define RED_BUTTON 15
+#define DHT_PIN 22
 #define DHTTYPE DHT22
 
 DHT dht(DHT_PIN, DHTTYPE);
@@ -16,10 +16,11 @@ int current_temp;
 int desired_temp = 72;
 
 void setup() {
-  pinMode(BLUE_LED, INPUT_PULLUP);
-  pinMode(RED_LED, INPUT_PULLUP);
-  pinMode(BLUE_BUTTON, OUTPUT);
-  pinMode(RED_BUTTON, OUTPUT);
+  Serial.begin(9600);
+  pinMode(BLUE_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+  pinMode(BLUE_BUTTON, INPUT_PULLUP);
+  pinMode(RED_BUTTON, INPUT_PULLUP);
 
   dht.begin();
 
