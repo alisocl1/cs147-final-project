@@ -36,11 +36,11 @@ void setup() {
 void loop() {
   if (digitalRead(BLUE_BUTTON) == LOW){
     desired_temp -= 1;
-    delay(10);
+    delay(100);
   }
   else if (digitalRead(RED_BUTTON) == LOW){
     desired_temp += 1;
-    delay(10);
+    delay(100);
   }
 
   if (current_temp > desired_temp){
@@ -65,5 +65,7 @@ void loop() {
   tft.printf("Current Temp: %d F", current_temp);
   tft.setCursor(0, 50); // Move cursor to next line?
   tft.printf("Desired Temp: %d F", desired_temp);
+
+  delay(500);
 
 }
