@@ -28,6 +28,9 @@ void setup() {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
+  tft.setCursor(0, 0);
+  tft.println("Display Initialized");
+  delay(5000);
 }
 
 void loop() {
@@ -54,7 +57,8 @@ void loop() {
   }
   current_temp = dht.readTemperature(true); //fahrenheit
 
-  Serial.print("Temperature: "); Serial.print(current_temp); Serial.println(" degrees F");
+  Serial.print("Current Temperature: "); Serial.print(current_temp); Serial.println(" degrees F");
+  Serial.print("Desired Temperature: "); Serial.print(desired_temp); Serial.println(" degrees F");
 
   tft.fillScreen(TFT_BLACK);
   tft.setCursor(0, 0);
