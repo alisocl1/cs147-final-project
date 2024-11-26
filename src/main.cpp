@@ -56,9 +56,10 @@ void loop() {
 
   Serial.print("Temperature: "); Serial.print(current_temp); Serial.println(" degrees F");
 
-  tft.fillRect(0, 0, 128, 32, TFT_BLACK);
+  tft.fillScreen(TFT_BLACK);
   tft.setCursor(0, 0);
   tft.printf("Current Temp: %d F", current_temp);
+  tft.setCursor(0, 50); // Move cursor to next line?
   tft.printf("Desired Temp: %d F", desired_temp);
 
 }
