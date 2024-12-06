@@ -2,6 +2,9 @@
 #include "DHT.h"
 #include <TFT_eSPI.h>
 
+#define GREEN_LED 33
+#define MOTION_SENSOR 25
+
 #define BLUE_LED 21
 #define RED_LED 17
 #define BLUE_BUTTON 2
@@ -15,12 +18,18 @@ TFT_eSPI tft = TFT_eSPI();
 int current_temp;
 int desired_temp = 72;
 
+int motion_sensor_state = LOW;
+int motion_sensor_val = 0;
+
 void setup() {
   Serial.begin(9600);
   pinMode(BLUE_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
   pinMode(BLUE_BUTTON, INPUT_PULLUP);
   pinMode(RED_BUTTON, INPUT_PULLUP);
+
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(MOTION_SENSOR, INPUT);
 
   dht.begin();
 
@@ -59,6 +68,29 @@ void loop() {
 
   Serial.print("Current Temperature: "); Serial.print(current_temp); Serial.println(" degrees F");
   Serial.print("Desired Temperature: "); Serial.print(desired_temp); Serial.println(" degrees F");
+
+motion_sensor_val = digitalRead(MOTION_SENSOR);
+if(motion_sensor_val == HIGH)
+{
+  digitalWrite(GREEN_LED, HIGH);
+  //delay(500);
+
+  if(motion_sensor_state == LOW)
+  {
+    Serial.println("Motion Detected!");
+    motion_sensor_state = HIGH;
+  }
+}
+else{
+  digitalWrite(GREEN_LED, LOW);
+  //delay(500);
+
+  if(motion_sensor_state == HIGH)
+  {
+    Serial.println("Motion Not Detected!");
+    motion_sensor_state = LOW;
+  }
+}
 
   tft.fillScreen(TFT_BLACK);
   tft.setCursor(0, 0);
