@@ -20,6 +20,8 @@ int desired_temp = 72;
 
 int motion_sensor_state = LOW;
 int motion_sensor_val = 0;
+unsigned long lastReadTime = 0;
+const unsigned long readInterval = 5000;
 
 void setup() {
   Serial.begin(9600);
@@ -39,7 +41,6 @@ void setup() {
   tft.setTextSize(2);
   tft.setCursor(0, 0);
   tft.println("Display Initialized");
-  delay(5000);
 }
 
 void loop() {
@@ -50,6 +51,12 @@ void loop() {
   else if (digitalRead(RED_BUTTON) == LOW){
     desired_temp += 1;
     delay(100);
+  }
+
+  // Read the temperature every 5 seconds
+  if (millis() - lastReadTime >= readInterval) {
+    current_temp = dht.readTemperature(true);
+    lastReadTime = millis();
   }
 
   if (current_temp > desired_temp){
