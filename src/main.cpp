@@ -24,6 +24,9 @@ int motion_sensor_val = 0;
 unsigned long lastReadTime = 0;
 const unsigned long readInterval = 5000;
 
+static int prev_current_temp = -999;
+static int prev_desired_temp = -999;
+
 void drawGauge(int x, int y, float value, const char *unit, uint16_t color, const char *label);
 uint16_t getCurrentTempColor(int current, int desired);
 uint16_t getDesiredTempColor(int desired);
@@ -52,8 +55,7 @@ void setup() {
 
 void loop() {
 
-  static int prev_current_temp = -999;
-  static int prev_desired_temp = -999;
+  
 
   if (digitalRead(BLUE_BUTTON) == LOW){
     desired_temp -= 1;
@@ -83,9 +85,9 @@ void loop() {
     digitalWrite(RED_LED, LOW);
   }
 
-  current_temp = dht.readTemperature(true); //fahrenheit
+  //current_temp = dht.readTemperature(true); //fahrenheit
 
-  if(current_temp != prev_current_temp || desired_temp != prev_current_temp)
+  if(current_temp != prev_current_temp || desired_temp != prev_desired_temp)
   {
     uint16_t currentColor = getCurrentTempColor(current_temp, desired_temp);
     uint16_t desiredColor = getDesiredTempColor(desired_temp);
