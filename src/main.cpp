@@ -64,7 +64,7 @@ void loop() {
     delay(500);
   }
 
-  // Read the temperature every 5 seconds
+  // Read the temperature every 5 seconds BRAH
   if (millis() - lastReadTime >= readInterval) {
     current_temp = dht.readTemperature(true);
     lastReadTime = millis();
