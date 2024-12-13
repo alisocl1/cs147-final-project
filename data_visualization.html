@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+  <canvas id="iotChart" width="400" height="200"></canvas>
+
+  <script>
+    // Wait for the window to load so that CSS and HTML elements are ready
+    window.onload = function () {
+      const ctx = document.getElementById('iotChart').getContext('2d');
+
+      const time = [];
+      const humidityData = [];
+      const currentData = [];
+      const desiredData = [];
+
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: time,
+          datasets: [
+            {
+              label: 'Humidity (%)',
+              data: humidityData,
+              borderColor: 'rgba(54, 162, 235, 1)',
+              backgroundColor: 'transparent',
+              fill: true,
+            },
+            {
+              label: 'Current Temp (°F)',
+              data: currentData,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'transparent',
+              fill: true,
+            },
+            {
+              label: 'Desired Temp (°F)',
+              data: desiredData,
+              borderColor: 'rgba(120, 218, 74, 1)',
+              backgroundColor: 'transparent',
+              fill: true,
+            },
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Time'
+              },
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Value'
+              },
+              min: 0,
+              max: 100,
+            }
+          }
+        }
+      });
+
+      // Fetch the data from the Flask server
+      function fetchData() {
+        fetch('http://52.53.170.60:5000/data')
+            .then(response => response.json())
+            .then(data => {
+              console.log('Received data:', data);  // Log the received data
+
+              const currentTime = data.timestamp || new Date().toLocaleTimeString();
+              const humidity = data.humidity;
+              const current = data.current;
+              const desired = data.desired;
+
+              // If we have new data, update the chart
+              if (time.length >= 10) {  // Limit to 10 data points
+                time.shift();
+                humidityData.shift();
+                currentData.shift();
+                desiredData.shift();
+              }
+
+              // Add new data to the chart
+              time.push(currentTime);
+              humidityData.push(humidity);
+              currentData.push(current);
+              desiredData.push(desired);
+
+              chart.update();  // Redraw the chart with the new data
+            })
+            .catch(error => console.error('Error fetching data:', error));
+      }
+
+      // Initially populate the chart with the first batch of data
+      fetchData();
+
+      // Poll the API every 5 seconds
+      setInterval(fetchData, 5000);
+    }
+  </script>
+
+</body>
+
+</html>

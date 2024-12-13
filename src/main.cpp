@@ -2,6 +2,8 @@
 #include "DHT.h"
 #include <TFT_eSPI.h>
 #include <stdint.h>
+#include <WiFi.h>
+#include <HttpClient.h>
 
 #define GREEN_LED 33
 #define MOTION_SENSOR 25
@@ -27,12 +29,79 @@ const unsigned long readInterval = 5000;
 static int prev_current_temp = -999;
 static int prev_desired_temp = -999;
 
+static const char* ssid = "alison phone";
+static const char* password = "-";
+const int kNetworkTimeout = 30 * 1000;
+const int kNetworkDelay = 1000;
+
 void drawGauge(int x, int y, float value, const char *unit, uint16_t color, const char *label);
 uint16_t getCurrentTempColor(int current, int desired);
 uint16_t getDesiredTempColor(int desired);
 void drawArc(int x, int y, int r, float startAngle, float endAngle, uint16_t color);
 
+// Handle GET request to AWS server
+void toAWS(float t, float h){
+  String humidity = String(h, 2);
+  String temperature = String(t, 2);
+
+  String url = "/?humidity=" + humidity + "&current=" + temperature + "&desired=" + desired_temp;
+
+  int err = 0;
+  WiFiClient c;
+  HttpClient http(c);
+
+  err = http.get("52.53.170.60", 5000, url.c_str(), NULL);
+  if (err == 0) {
+      Serial.println("startedRequest ok");
+      err = http.responseStatusCode();
+      if (err >= 0) {
+          // Check response code
+          Serial.print("Got status code: ");
+          Serial.println(err);
+          err = http.skipResponseHeaders();
+          if (err >= 0) {
+              int bodyLen = http.contentLength();
+              Serial.print("Content length is: ");
+              Serial.println(bodyLen);
+              Serial.println();
+              Serial.println("Body returned follows:");
+
+              // Now we've got to the body, so we can print it out
+              unsigned long timeoutStart = millis();
+              char c;
+
+              // While we haven't timed out & haven't reached the end of the body
+              while ((http.connected() || http.available()) && ((millis() - timeoutStart) < kNetworkTimeout)) {
+                  if (http.available()) {
+                      c = http.read();
+                      // Print out this character
+                      Serial.print(c);
+                      bodyLen--;
+                      // We read something, reset the timeout counter
+                      timeoutStart = millis();
+                  } else {
+                      // We haven't got any data, so let's pause to allow some to arrive
+                      delay(kNetworkDelay);
+                  }
+              }
+          } else {
+              Serial.print("Failed to skip response headers: ");
+              Serial.println(err);
+          }
+      } else {
+          Serial.print("Getting response failed: ");
+          Serial.println(err);
+      }
+  } else {
+      Serial.print("Connect failed: ");
+      Serial.println(err);
+  }
+
+  http.stop();
+}
+
 void setup() {
+  // Initialization
   Serial.begin(9600);
   pinMode(BLUE_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
@@ -42,8 +111,18 @@ void setup() {
   pinMode(GREEN_LED, OUTPUT);
   pinMode(MOTION_SENSOR, INPUT);
 
+  // Connect to WIFI
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+
+
   dht.begin();
 
+  // Initialize display on TTGO
   tft.init();
   tft.setRotation(1);
   tft.fillScreen(TFT_BLACK);
@@ -54,9 +133,7 @@ void setup() {
 }
 
 void loop() {
-
-  
-
+  // Handle button press
   if (digitalRead(BLUE_BUTTON) == LOW){
     desired_temp -= 1;
     delay(500);
@@ -68,10 +145,17 @@ void loop() {
 
   // Read the temperature every 5 seconds BRAH
   if (millis() - lastReadTime >= readInterval) {
-    current_temp = dht.readTemperature(true);
+    float temperature = dht.readTemperature(true);
+    float humidity = dht.readHumidity();
+
+    toAWS(temperature, humidity);
+
+    current_temp = (int)temperature;
+
     lastReadTime = millis();
   }
 
+  // Change LED colors based on temperatures
   if (current_temp > desired_temp){
     digitalWrite(BLUE_LED, HIGH);
     digitalWrite(RED_LED, LOW);
@@ -85,8 +169,7 @@ void loop() {
     digitalWrite(RED_LED, LOW);
   }
 
-  //current_temp = dht.readTemperature(true); //fahrenheit
-
+  // Update display gauges
   if(current_temp != prev_current_temp || desired_temp != prev_desired_temp)
   {
     uint16_t currentColor = getCurrentTempColor(current_temp, desired_temp);
@@ -104,44 +187,34 @@ void loop() {
     Serial.print("Desired Temperature: "); Serial.print(desired_temp); Serial.println(" degrees F");
   }
 
-//motion sensor stuff
-motion_sensor_val = digitalRead(MOTION_SENSOR);
-if(motion_sensor_val == HIGH)
-{
-  digitalWrite(GREEN_LED, HIGH);
-  //delay(500);
-
-  if(motion_sensor_state == LOW)
+  //motion sensor stuff
+  motion_sensor_val = digitalRead(MOTION_SENSOR);
+  if(motion_sensor_val == HIGH)
   {
-    Serial.println("Motion Detected!");
-    motion_sensor_state = HIGH;
+    digitalWrite(GREEN_LED, HIGH);
+    //delay(500);
+
+    if(motion_sensor_state == LOW)
+    {
+      Serial.println("Motion Detected!");
+      motion_sensor_state = HIGH;
+    }
   }
-}
-else{
-  digitalWrite(GREEN_LED, LOW);
-  //delay(500);
+  else{
+    digitalWrite(GREEN_LED, LOW);
+    //delay(500);
 
-  if(motion_sensor_state == HIGH)
-  {
-    Serial.println("Motion Not Detected!");
-    motion_sensor_state = LOW;
+    if(motion_sensor_state == HIGH)
+    {
+      Serial.println("Motion Not Detected!");
+      motion_sensor_state = LOW;
+    }
   }
+
+
 }
 
-  
-
-  //delay(500);
-  /*
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor(0, 0);
-  tft.printf("Current Temp: %d F", current_temp);
-  tft.setCursor(0, 50); // Move cursor to next line?
-  tft.printf("Desired Temp: %d F", desired_temp);
-
-  delay(500);
-  */
-}
-
+// Gauge design
 void drawGauge(int x, int y, float value, const char *unit, uint16_t color, const char *label)
 {
   int radius = 45;
@@ -198,6 +271,7 @@ uint16_t getDesiredTempColor(int desired)
   }
 }
 
+// Customizes arc 
 void drawArc(int x, int y, int r, float startAngle, float endAngle, uint16_t color)
 {
   for(int thickness = 0; thickness < 6; thickness++)
